@@ -4,7 +4,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
     const transporter = await createTransporter();
   
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: process.env.SMTP_USER,
       to: email,
       subject: '🎉 Welcome to Our Platform!',
       html: `
@@ -43,7 +43,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
   export async function sendVerificationEmail(email: string, link: string) {
     const transporter = await createTransporter();
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: process.env.SMTP_USER,
       to: email,
       subject: 'Verify Your Email Address',
       html: `
@@ -76,7 +76,7 @@ export async function sendWelcomeEmail(email: string, name: string) {
     const transporter = await createTransporter();
   
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: process.env.SMTP_USER,
       to: email,
       subject: 'Reset Your Password',
       html: `
