@@ -1,7 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from "cors";
-import { dbRoutes, homeRoutes, authRoutes } from './routes';
+import {dbRoutes, homeRoutes, authRoutes, programRoutes} from './routes';
 import fs from 'fs';
 import path from 'path';
 
@@ -34,5 +34,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/', homeRoutes);
 app.use('/test', dbRoutes);
 app.use('/auth', authRoutes);
+app.use('/program', programRoutes);
 
 export default app;

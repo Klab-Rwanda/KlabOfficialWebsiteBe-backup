@@ -17,7 +17,7 @@ import fs from 'fs';
 })();
 
 /** Base folder name for all uploads in this application */
-export const cloudinaryFolderName = 'ryde-uber-clone';
+export const cloudinaryFolderName = 'klab';
 
 /**
  * Uploads an image to Cloudinary and handles local file cleanup

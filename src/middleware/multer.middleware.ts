@@ -22,7 +22,13 @@ const storage = multer.diskStorage({
         file: Express.Multer.File,
         cb: (error: Error | null, destination: string) => void,
     ) {
-        cb(null, './public/temp');
+        // Ensure temp directory exists
+        const fs = require('fs');
+        const tempDir = './public/temp';
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+        }
+        cb(null, tempDir);
     },
 
     /**
