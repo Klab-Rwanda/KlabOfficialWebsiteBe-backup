@@ -3,74 +3,95 @@ import asyncHandler from '../utils/asyncHandler';
 import { validateRequiredFields } from '../utils/validateRequiredFields';
 import { sendResponse } from '../utils/ApiResponse';
 import { handleError } from '../utils/ApiError';
-import { userService } from '../services/program.service';
+import { programService } from '../services/program.service';
 
 /**
- * Register a new user
+ * Create a new program
  */
-export const signUp = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { firstname, lastname, email, password } = req.body;
+export const createProgram = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { name, description, details } = req.body;
 
-    if (!firstname || !lastname || !email || !password) {
-        return sendResponse(res, 400, {}, 'All fields are required');
+    if (!name || !description || !details) {
+        return sendResponse(res, 400, {}, 'Name, description, and details are required');
     }
 
-    // Check if user already exists
-    const userExists = await userService.findUserByEmail(email);
-    if (userExists) {
-        return sendResponse(res, 409, {}, 'User already exists');
-    }
+    const imagePath = req.file?.path;
+    const newProgram = await programService.createProgram(name, description, details, imagePath);
 
-    const avatarPath = req.file?.path;
-    const newUser = await userService.createUser(firstname, lastname, email, password, avatarPath);
-
-    sendResponse(res, 201, newUser, 'User signed up successfully');
+    sendResponse(res, 201, newProgram, 'Program created successfully');
 });
 
 /**
- * Update profile
+ * Get all programs
  */
-export const updateProfileById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+export const getAllPrograms = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const programs = await programService.getAllPrograms();
+    sendResponse(res, 200, programs, 'Programs fetched successfully');
+});
+
+/**
+ * Get program by ID
+ */
+export const getProgramById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
-    const { firstname, lastname, phone_number } = req.body;
 
-    const validation = validateRequiredFields({ id, firstname, lastname });
+    const validation = validateRequiredFields({ id });
     if (!validation.isValid) {
-        return sendResponse(res, 400, {}, validation.error || 'Required fields are missing');
+        return sendResponse(res, 400, {}, validation.error || 'Program ID is required');
     }
 
-    const existProfile = await userService.findUserById(id);
-    if (!existProfile) {
-        return sendResponse(res, 404, {}, 'Profile not found');
+    const program = await programService.findProgramById(id);
+    if (!program) {
+        return sendResponse(res, 404, {}, 'Program not found');
     }
 
-    const avatarLocalPath = req.file?.path;
-    const profile = await userService.updateUser(id, firstname, lastname, phone_number, avatarLocalPath, existProfile.avatar);
-
-    sendResponse(res, 200, profile, 'Profile updated successfully');
+    sendResponse(res, 200, program, 'Program fetched successfully');
 });
 
 /**
- * Delete profile
+ * Update program
  */
-export const deleteProfileById = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+export const updateProgram = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    const { name, description, details } = req.body;
+
+    const validation = validateRequiredFields({ id });
+    if (!validation.isValid) {
+        return sendResponse(res, 400, {}, validation.error || 'Program ID is required');
+    }
+
+    const existProgram = await programService.findProgramById(id);
+    if (!existProgram) {
+        return sendResponse(res, 404, {}, 'Program not found');
+    }
+
+    const imageLocalPath = req.file?.path;
+    const program = await programService.updateProgram(id, name, description, details, imageLocalPath, existProgram.image);
+
+    sendResponse(res, 200, program, 'Program updated successfully');
+});
+
+/**
+ * Delete program
+ */
+export const deleteProgram = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
 
         const validation = validateRequiredFields({ id });
         if (!validation.isValid) {
-            return sendResponse(res, 400, {}, validation.error || 'User ID is required');
+            return sendResponse(res, 400, {}, validation.error || 'Program ID is required');
         }
 
-        const existProfile = await userService.findUserById(id);
-        if (!existProfile) {
-            return sendResponse(res, 404, {}, 'Profile not found');
+        const existProgram = await programService.findProgramById(id);
+        if (!existProgram) {
+            return sendResponse(res, 404, {}, 'Program not found');
         }
 
-        await userService.deleteUser(id, existProfile.avatar);
+        await programService.deleteProgram(id, existProgram.image);
 
-        sendResponse(res, 200, existProfile, 'Profile deleted successfully');
+        sendResponse(res, 200, existProgram, 'Program deleted successfully');
     } catch (error) {
-        handleError(res, error, 'Something went wrong while deleting profile');
+        handleError(res, error, 'Something went wrong while deleting program');
     }
 });

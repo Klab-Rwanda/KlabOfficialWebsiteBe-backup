@@ -2,76 +2,80 @@ import pool from "../config/db.config";
 import uploadOnCloudinary, { cloudinaryFolderName } from '../utils/cloudinary';
 import { v2 as cloudinary } from 'cloudinary';
 
-const handleAvatarOperations = async (existingAvatarUrl: string | null): Promise<string | null> => {
-    if (!existingAvatarUrl) return null;
-    const avatarParts = existingAvatarUrl.split('klab/');
-    if (avatarParts.length > 1) {
-        return avatarParts[1].split('.')[0];
+const handleImageOperations = async (existingImageUrl: string | null): Promise<string | null> => {
+    if (!existingImageUrl) return null;
+    const imageParts = existingImageUrl.split('klab/');
+    if (imageParts.length > 1) {
+        return imageParts[1].split('.')[0];
     }
     return null;
 };
 
-export const userService = {
-    async createUser(firstname: string, lastname: string, email: string, password: string, avatarPath?: string) {
-        let avatar = null;
-        if (avatarPath) {
-            avatar = await uploadOnCloudinary(avatarPath);
+export const programService = {
+    async createProgram(name: string, description: string, details: string, imagePath?: string) {
+        let image = null;
+        if (imagePath) {
+            image = await uploadOnCloudinary(imagePath);
         }
 
-        const newUser = await pool.query(
-            `INSERT INTO testing (firstname, lastname, email, password, avatar) 
-             VALUES ($1, $2, $3, $4, $5) 
-             RETURNING id, email, firstname, lastname, avatar`,
-            [firstname, lastname, email, password, avatar]
+        const newProgram = await pool.query(
+            `INSERT INTO programs (name, description, details, image) 
+             VALUES ($1, $2, $3, $4) 
+             RETURNING id, name, description, details, image, created_at, updated_at`,
+            [name, description, details, image]
         );
 
-        return newUser.rows[0];
+        return newProgram.rows[0];
     },
 
-    async findUserByEmail(email: string) {
-        const result = await pool.query('SELECT * FROM testing WHERE email = $1', [email]);
-        return result.rows[0];
-    },
-
-    async findUserById(id: string) {
+    async getAllPrograms() {
         const result = await pool.query(
-            `SELECT id, avatar, firstname, lastname, email, phone_number, is_verified, created_at 
-             FROM testing 
+            `SELECT id, name, description, details, image, created_at, updated_at 
+             FROM programs 
+             ORDER BY created_at DESC`
+        );
+        return result.rows;
+    },
+
+    async findProgramById(id: string) {
+        const result = await pool.query(
+            `SELECT id, name, description, details, image, created_at, updated_at 
+             FROM programs 
              WHERE id = $1 LIMIT 1`,
             [id],
         );
         return result.rows[0];
     },
 
-    async updateUser(id: string, firstname: string, lastname: string, phone_number: string, avatarLocalPath?: string, existingAvatarUrl?: string) {
-        let avatar = existingAvatarUrl;
+    async updateProgram(id: string, name: string, description: string, details: string, imageLocalPath?: string, existingImageUrl?: string) {
+        let image = existingImageUrl;
 
-        if (avatarLocalPath) {
-            const existAvatar = await handleAvatarOperations(existingAvatarUrl || null);
-            if (existAvatar) {
-                await cloudinary.uploader.destroy(`${cloudinaryFolderName}/${existAvatar}`, { invalidate: true });
+        if (imageLocalPath) {
+            const existImage = await handleImageOperations(existingImageUrl || null);
+            if (existImage) {
+                await cloudinary.uploader.destroy(`${cloudinaryFolderName}/${existImage}`, { invalidate: true });
             }
-            avatar = await uploadOnCloudinary(avatarLocalPath) || undefined;
+            image = await uploadOnCloudinary(imageLocalPath) || undefined;
         }
 
-        const profile = await pool.query(
-            `UPDATE testing 
-             SET firstname = $1, lastname = $2, phone_number = $3, avatar = $4 
+        const program = await pool.query(
+            `UPDATE programs 
+             SET name = $1, description = $2, details = $3, image = $4, updated_at = NOW()
              WHERE id = $5 
-             RETURNING id, avatar, firstname, lastname, email, phone_number, is_verified, created_at`,
-            [firstname, lastname, phone_number, avatar, id],
+             RETURNING id, name, description, details, image, created_at, updated_at`,
+            [name, description, details, image, id],
         );
 
-        return profile.rows[0];
+        return program.rows[0];
     },
 
-    async deleteUser(id: string, existingAvatarUrl?: string) {
-        const existAvatar = await handleAvatarOperations(existingAvatarUrl || null);
+    async deleteProgram(id: string, existingImageUrl?: string) {
+        const existImage = await handleImageOperations(existingImageUrl || null);
 
-        if (existAvatar) {
-            await cloudinary.uploader.destroy(`${cloudinaryFolderName}/${existAvatar}`, { invalidate: true });
+        if (existImage) {
+            await cloudinary.uploader.destroy(`${cloudinaryFolderName}/${existImage}`, { invalidate: true });
         }
 
-        await pool.query('DELETE FROM testing WHERE id = $1', [id]);
+        await pool.query('DELETE FROM programs WHERE id = $1', [id]);
     }
 };
