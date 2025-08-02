@@ -34,6 +34,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/', homeRoutes);
 app.use('/test', dbRoutes);
 app.use('/auth', authRoutes);
-app.use('/program', programRoutes);
+app.use('/programs', programRoutes);
 
 export default app;
