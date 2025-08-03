@@ -3,7 +3,7 @@ import { Response } from 'express';
 /**
  * Standard API response interface
  */
-interface ApiResponse {
+export interface ApiResponse {
     success: boolean;
     message: string;
     data?: any;
