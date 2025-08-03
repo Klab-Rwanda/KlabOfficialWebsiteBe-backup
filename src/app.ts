@@ -1,7 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from "cors";
-import {dbRoutes, homeRoutes, authRoutes, programRoutes, dynamicFormRoutes} from './routes';
+import {dbRoutes, homeRoutes, authRoutes, programRoutes, dynamicFormRoutes, applicationSubmissionRoutes} from './routes';
 import fs from 'fs';
 import path from 'path';
 
@@ -36,5 +36,5 @@ app.use('/test', dbRoutes);
 app.use('/auth', authRoutes);
 app.use('/programs', programRoutes);
 app.use('/forms', dynamicFormRoutes);
-
+app.use('/applications', applicationSubmissionRoutes);
 export default app;

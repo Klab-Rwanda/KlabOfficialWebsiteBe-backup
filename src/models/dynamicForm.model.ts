@@ -39,17 +39,7 @@ export class DynamicFormModel {
         throw new ApiError(404, 'Program not found');
       }
 
-      // Check if there's already a published form for this program
-      if (data.status === FormStatus.PUBLISHED) {
-        const existingPublished = await client.query(
-          'SELECT id FROM dynamic_forms WHERE program_id = $1 AND status = $2',
-          [data.program_id, FormStatus.PUBLISHED]
-        );
-
-        if (existingPublished.rows.length > 0) {
-          throw new ApiError(400, 'A published form already exists for this program');
-        }
-      }
+      // Note: Multiple published forms are now allowed per program
 
       // Create the form
       const formResult = await client.query(
@@ -267,7 +257,9 @@ export class DynamicFormModel {
          p.title as program_title
        FROM dynamic_forms df
        LEFT JOIN programs p ON df.program_id = p.id
-       WHERE df.program_id = $1 AND df.status = $2`,
+       WHERE df.program_id = $1 AND df.status = $2
+       ORDER BY df.updated_at DESC
+       LIMIT 1`,
       [programId, FormStatus.PUBLISHED]
     );
 
@@ -293,6 +285,43 @@ export class DynamicFormModel {
   }
 
   /**
+   * Get all published forms for a program
+   */
+  async getAllPublishedFormsByProgramId(programId: number): Promise<DynamicForm[]> {
+    const formResult = await this.pool.query(
+      `SELECT 
+         df.*,
+         p.title as program_title
+       FROM dynamic_forms df
+       LEFT JOIN programs p ON df.program_id = p.id
+       WHERE df.program_id = $1 AND df.status = $2
+       ORDER BY df.updated_at DESC`,
+      [programId, FormStatus.PUBLISHED]
+    );
+
+    const forms: DynamicForm[] = [];
+
+    for (const formRow of formResult.rows) {
+      const fields = await this.getFormFields(formRow.id);
+      
+      forms.push({
+        id: formRow.id,
+        program_id: formRow.program_id,
+        title: formRow.title,
+        description: formRow.description,
+        fields: fields,
+        status: formRow.status,
+        created_at: formRow.created_at,
+        updated_at: formRow.updated_at,
+        created_by: formRow.created_by,
+        version: formRow.version
+      });
+    }
+
+    return forms;
+  }
+
+  /**
    * Update a dynamic form
    */
   async updateDynamicForm(id: number, data: UpdateDynamicFormRequest): Promise<DynamicForm | null> {
@@ -313,22 +342,18 @@ export class DynamicFormModel {
 
       const form = existingForm.rows[0];
 
-      // Check if trying to publish and there's already a published form for this program
-      if (data.status === FormStatus.PUBLISHED && form.status !== FormStatus.PUBLISHED) {
-        const existingPublished = await client.query(
-          'SELECT id FROM dynamic_forms WHERE program_id = $1 AND status = $2 AND id != $3',
-          [form.program_id, FormStatus.PUBLISHED, id]
-        );
-
-        if (existingPublished.rows.length > 0) {
-          throw new ApiError(400, 'A published form already exists for this program');
-        }
-      }
+      // Note: Multiple published forms are now allowed per program
 
       // Update form basic info
       const updateFields: string[] = [];
       const updateValues: any[] = [];
       let paramIndex = 1;
+
+      if (data.program_id !== undefined) {
+        updateFields.push(`program_id = $${paramIndex}`);
+        updateValues.push(data.program_id);
+        paramIndex++;
+      }
 
       if (data.title !== undefined) {
         updateFields.push(`title = $${paramIndex}`);

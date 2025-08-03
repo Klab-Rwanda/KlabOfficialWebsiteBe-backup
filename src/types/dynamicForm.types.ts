@@ -69,6 +69,7 @@ export interface CreateDynamicFormRequest {
 }
 
 export interface UpdateDynamicFormRequest {
+  program_id?: number;
   title?: string;
   description?: string;
   fields?: Omit<FormField, 'id'>[];
